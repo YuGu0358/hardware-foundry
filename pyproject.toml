@@ -15,10 +15,11 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["agents/_base"]
+members = ["agents/_base", "apps/api"]
 
 [tool.uv.sources]
 foundry-agent-base = { workspace = true }
+foundry-api = { workspace = true }
 
 [tool.ruff]
 line-length = 100
