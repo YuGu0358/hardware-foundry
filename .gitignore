@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime artifacts (CAD output, Gerber, gcode, firmware builds)
+artifacts/
+*.stl
+*.gcode
+*.gerber.zip
+build/
+.pio/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Generated type stubs
+packages/shared-types/src/generated/
+
+# uv
+.python-version

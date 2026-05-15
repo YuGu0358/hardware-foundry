@@ -1,0 +1,52 @@
+[project]
+name = "hardware-foundry"
+version = "0.0.1"
+description = "Idea-to-physical hardware automation platform — LLM multi-agent system"
+requires-python = ">=3.12"
+readme = "README.md"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+]
+
+[tool.uv.workspace]
+members = ["agents/_base"]
+
+[tool.uv.sources]
+foundry-agent-base = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF", "SIM", "PL"]
+ignore = ["PLR0913"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["agents", "tools", "workflows", "apps/api"]
+asyncio_mode = "auto"
+markers = [
+    "phase0: Phase 0 baseline tests",
+    "phase1: Clarifier + Planner",
+    "phase2: Compliance + Feasibility",
+    "phase3: Component selection",
+    "phase4: CAD + DfAM",
+    "phase5: PCB",
+    "phase6: Simulation",
+    "phase7: Firmware + App",
+    "phase8: Review",
+    "phase9: Fabrication",
+    "phase10: Docs",
+    "phase11: E2E",
+]

@@ -1,0 +1,70 @@
+# LiteLLM Router config — agent virtual name → underlying provider model
+# Aligned with plan §2.2. Phase 0 enables only the connectivity targets;
+# add more entries as each agent comes online.
+
+model_list:
+  # ---------- Tier 1: closed-source heavyweights ----------
+  - model_name: agent:planner
+    litellm_params:
+      model: anthropic/claude-opus-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      temperature: 0.2
+
+  - model_name: agent:sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+      temperature: 0.3
+
+  - model_name: agent:gpt4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      temperature: 0.3
+
+  - model_name: agent:gemini
+    litellm_params:
+      model: gemini/gemini-1.5-pro
+      api_key: os.environ/GOOGLE_API_KEY
+      temperature: 0.3
+
+  - model_name: agent:deepseek
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+      temperature: 0.3
+
+  # ---------- Tier 2: open-source local (Qwen via vLLM/Ollama) ----------
+  - model_name: agent:qwen-coder
+    litellm_params:
+      model: openai/Qwen2.5-Coder-32B-Instruct
+      api_base: os.environ/QWEN_BASE_URL
+      api_key: os.environ/QWEN_API_KEY
+
+  # ---------- Cheap connectivity-test target for Phase 0 Echo Agent ----------
+  - model_name: agent:echo
+    litellm_params:
+      model: anthropic/claude-haiku-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+      temperature: 0.0
+
+  # ---------- Embeddings ----------
+  - model_name: embed:bge-m3
+    litellm_params:
+      model: openai/BAAI/bge-m3
+      api_base: os.environ/QWEN_BASE_URL
+      api_key: os.environ/QWEN_API_KEY
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  cache: true
+  cache_params:
+    type: redis
+    host: redis
+    port: 6379
+
+general_settings:
+  master_key: ${LITELLM_MASTER_KEY}
+  database_url: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  store_model_in_db: false
