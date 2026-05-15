@@ -1,11 +1,16 @@
-"""ComponentSelectionAgent — Phase 3 foundation slice.
+"""ComponentSelectionAgent — Phase 3 slice 2.
 
-Uses StubSupplierAdapter to demonstrate end-to-end flow. Real adapter
-routing + Agentic RAG lands in follow-up PRs.
+The agent now uses an LLM-driven ComponentQuery extractor: it consumes the
+frozen ProductSpec (plus any ReferenceProduct findings) and asks the LLM to
+emit a structured list of ComponentQuery objects covering the major
+subsystems (compute, power, sensors, outputs, connectors). Each query is
+then handed to the injected SupplierAdapter (StubSupplierAdapter in CI /
+dev). Real Digi-Key / LCSC / Octopart adapters land in slices 3-5.
 """
 
 from __future__ import annotations
 
+import json
 from typing import ClassVar
 
 import structlog
@@ -15,17 +20,32 @@ from foundry_agent_base import (
     BaseAgent,
     BOMItem,
     ComponentQuery,
+    ProductSpec,
     ProductState,
-    Requirement,
+    ReferenceProduct,
     StateUpdate,
 )
+from pydantic import BaseModel, Field, ValidationError
 
+from foundry_agent_component_selection.prompts import (
+    EXTRACTION_SYSTEM_PROMPT_V1,
+    extraction_user_prompt,
+)
 from foundry_agent_component_selection.suppliers import (
     StubSupplierAdapter,
     SupplierAdapter,
 )
 
 logger = structlog.get_logger()
+
+_PRODUCTION_SUPPLIERS = {"digikey", "lcsc", "octopart", "jlcpcb"}
+
+
+class _ExtractorOutput(BaseModel):
+    """Internal Pydantic envelope used to parse the extractor LLM JSON response."""
+
+    queries: list[ComponentQuery]
+    summary: str = Field(default="")
 
 
 class ComponentSelectionAgent(BaseAgent):
@@ -47,28 +67,22 @@ class ComponentSelectionAgent(BaseAgent):
             )
             return {"bom": None}
 
-        # Phase 3 slice 1 — deterministic skeleton:
-        # For each Requirement with category="functional", emit one ComponentQuery
-        # built from the requirement statement. Hit the stub adapter, take the
-        # top-scored match per query. Assemble into BOM.
-        queries = [
-            _query_from_requirement(r)
-            for r in state.product_spec.requirements
-            if r.category == "functional"
-        ]
+        queries = await self._extract_queries(
+            state.product_spec,
+            state.reference_findings or [],
+        )
+
         items: list[BOMItem] = []
         for q in queries:
             matches = await self._adapter.search(q)
             if not matches:
                 continue
             best = max(matches, key=lambda m: m.score)
-            # Map non-production sentinels (e.g. "stub") to "other" so BOMItem stays
-            # on its production Literal. Stub-sourced rows remain identifiable via
-            # mpn starting with "STUB-".
-            _supplier = (
-                best.supplier
-                if best.supplier in {"digikey", "lcsc", "octopart", "jlcpcb"}
-                else "other"
+            # Map non-production sentinels (e.g. "stub") to "other" so BOMItem
+            # stays on its production Literal. Stub-sourced rows remain
+            # identifiable via mpn starting with "STUB-".
+            supplier = (
+                best.supplier if best.supplier in _PRODUCTION_SUPPLIERS else "other"
             )
             items.append(
                 BOMItem(
@@ -77,7 +91,7 @@ class ComponentSelectionAgent(BaseAgent):
                     description=best.description,
                     quantity=q.quantity,
                     unit_price_cents=best.unit_price_cents,
-                    supplier=_supplier,
+                    supplier=supplier,
                     supplier_part_number=best.supplier_part_number,
                     in_stock=best.in_stock,
                     datasheet_url=best.datasheet_url,
@@ -91,7 +105,28 @@ class ComponentSelectionAgent(BaseAgent):
             "current_phase": "design",
         }
 
-
-def _query_from_requirement(req: Requirement) -> ComponentQuery:
-    """Heuristic stub — slice 2 will replace with an LLM-driven parameter extractor."""
-    return ComponentQuery(role=req.id, parameters={"statement": req.statement})
+    async def _extract_queries(
+        self,
+        spec: ProductSpec,
+        references: list[ReferenceProduct],
+    ) -> list[ComponentQuery]:
+        raw = await self.llm(
+            messages=[
+                {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT_V1},
+                {
+                    "role": "user",
+                    "content": extraction_user_prompt(spec, references),
+                },
+            ],
+            temperature=0.2,
+            max_tokens=3000,
+            response_format={"type": "json_object"},
+        )
+        try:
+            parsed = _ExtractorOutput.model_validate(json.loads(raw))
+        except (json.JSONDecodeError, ValidationError) as exc:
+            raise RuntimeError(
+                f"component_selection: failed to parse extractor JSON ({exc}). "
+                f"Raw: {raw[:400]}"
+            ) from exc
+        return parsed.queries
