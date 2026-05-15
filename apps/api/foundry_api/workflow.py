@@ -1,6 +1,6 @@
 """LangGraph workflow assembly + multi-turn / command helpers.
 
-Phase 1 topology:
+Phase 1 + Phase 2 topology:
 
     START
       ├─(conditional, _route_after_start)─►
@@ -16,8 +16,15 @@ Phase 1 topology:
     planner (interrupt_after)
       │
       ├─(conditional, _route_after_planner)─►
-      │     gate_plan_approved → END
+      │     gate_plan_approved → compliance
       │     else               → clarifier (revision loop)
+      ▼
+    compliance (interrupt_after)
+      │
+      └─► END
+
+Phase 2 MVP runs the Compliance agent automatically once the plan is approved.
+No `gate_compliance_approved` flag yet — the human review gate lands in Phase 3.
 
 thread_id == project_id, so all turns of one project share state in the
 LangGraph checkpointer.
@@ -32,6 +39,7 @@ from uuid import UUID
 
 from foundry_agent_base import AgentContext, Message, ProductState
 from foundry_agent_clarifier import ClarifierAgent
+from foundry_agent_compliance import ComplianceAgent
 from foundry_agent_planner import PlannerAgent
 from foundry_agent_reference_search import ReferenceSearchAgent
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -65,6 +73,10 @@ async def _planner_node(state: ProductState) -> dict:
     return await PlannerAgent()(state, _make_ctx(state))
 
 
+async def _compliance_node(state: ProductState) -> dict:
+    return await ComplianceAgent()(state, _make_ctx(state))
+
+
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
@@ -79,7 +91,7 @@ def _route_after_clarifier(state: ProductState) -> str:
 
 
 def _route_after_planner(state: ProductState) -> str:
-    return "end" if state.gate_plan_approved else "clarifier"
+    return "compliance" if state.gate_plan_approved else "clarifier"
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +105,7 @@ def _build_graph() -> StateGraph:
     graph.add_node("reference_search", _reference_search_node)
     graph.add_node("clarifier", _clarifier_node)
     graph.add_node("planner", _planner_node)
+    graph.add_node("compliance", _compliance_node)
 
     graph.add_conditional_edges(
         START,
@@ -108,8 +121,9 @@ def _build_graph() -> StateGraph:
     graph.add_conditional_edges(
         "planner",
         _route_after_planner,
-        {"end": END, "clarifier": "clarifier"},
+        {"compliance": "compliance", "clarifier": "clarifier"},
     )
+    graph.add_edge("compliance", END)
     return graph
 
 
@@ -117,14 +131,16 @@ def _build_graph() -> StateGraph:
 async def lifespan_graph() -> AsyncIterator[object]:
     """Yield a compiled LangGraph app with a live Postgres checkpointer.
 
-    `interrupt_after=["clarifier", "planner"]` pauses the graph after each
-    of these nodes; the router resumes via /messages or /commands/* endpoints.
+    `interrupt_after=["clarifier", "planner", "compliance"]` pauses the graph
+    after each of these nodes; the router resumes via /messages or /commands/*
+    endpoints. Phase 2 MVP has no `compliance` gate flag — the graph reaches
+    END after the compliance interrupt is acknowledged.
     """
     async with AsyncPostgresSaver.from_conn_string(langgraph_dsn()) as checkpointer:
         await checkpointer.setup()
         compiled = _build_graph().compile(
             checkpointer=checkpointer,
-            interrupt_after=["clarifier", "planner"],
+            interrupt_after=["clarifier", "planner", "compliance"],
         )
         yield compiled
 
@@ -195,7 +211,9 @@ async def apply_command_approve_plan(
     *,
     project_id: UUID,
 ) -> ProductState:
-    """HITL Gate #1. Sets gate_plan_approved=True and resumes; planner→END."""
+    """HITL Gate #1. Sets gate_plan_approved=True and resumes; planner→compliance,
+    then graph stops at the compliance interrupt with a fresh ComplianceReport
+    attached to state."""
     await _require_state(compiled_app, project_id)
     await _patch_state(compiled_app, project_id, {"gate_plan_approved": True})
     await compiled_app.ainvoke(None, config=_config_for(project_id))  # type: ignore[attr-defined]

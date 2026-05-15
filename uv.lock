@@ -10,6 +10,7 @@ resolution-markers = [
 members = [
     "foundry-agent-base",
     "foundry-agent-clarifier",
+    "foundry-agent-compliance",
     "foundry-agent-planner",
     "foundry-agent-reference-search",
     "foundry-api",
@@ -561,6 +562,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "foundry-agent-compliance"
+version = "0.0.1"
+source = { editable = "agents/compliance" }
+dependencies = [
+    { name = "foundry-agent-base" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "foundry-agent-base", editable = "agents/_base" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
 name = "foundry-agent-planner"
 version = "0.0.1"
 source = { editable = "agents/planner" }
@@ -602,6 +618,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "foundry-agent-base" },
     { name = "foundry-agent-clarifier" },
+    { name = "foundry-agent-compliance" },
     { name = "foundry-agent-planner" },
     { name = "foundry-agent-reference-search" },
     { name = "httpx" },
@@ -622,6 +639,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "foundry-agent-base", editable = "agents/_base" },
     { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
+    { name = "foundry-agent-compliance", editable = "agents/compliance" },
     { name = "foundry-agent-planner", editable = "agents/planner" },
     { name = "foundry-agent-reference-search", editable = "agents/reference_search" },
     { name = "httpx", specifier = ">=0.27" },
@@ -808,6 +826,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "foundry-agent-base" },
     { name = "foundry-agent-clarifier" },
+    { name = "foundry-agent-compliance" },
     { name = "foundry-agent-planner" },
     { name = "foundry-agent-reference-search" },
     { name = "foundry-api" },
@@ -826,6 +845,7 @@ dev = [
 requires-dist = [
     { name = "foundry-agent-base", editable = "agents/_base" },
     { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
+    { name = "foundry-agent-compliance", editable = "agents/compliance" },
     { name = "foundry-agent-planner", editable = "agents/planner" },
     { name = "foundry-agent-reference-search", editable = "agents/reference_search" },
     { name = "foundry-api", editable = "apps/api" },

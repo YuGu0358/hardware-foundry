@@ -62,6 +62,28 @@ class ProductSpec(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Compliance (Phase 2 — Compliance agent)
+# ---------------------------------------------------------------------------
+
+
+class ComplianceTarget(BaseModel):
+    """One regulation/standard that the product must (or should) satisfy."""
+
+    market: Literal["CN", "EU", "US"]
+    regulation: str
+    clause_ref: str | None = None
+    applies_because: str
+    severity: Literal["mandatory", "recommended", "informational"]
+
+
+class ComplianceReport(BaseModel):
+    """Aggregate compliance findings for a ProductSpec."""
+
+    targets: list[ComplianceTarget]
+    summary: str
+
+
+# ---------------------------------------------------------------------------
 # Reference products (PR #4 — Reference Search agent)
 # ---------------------------------------------------------------------------
 
@@ -294,6 +316,7 @@ class ProductState(BaseModel):
     clarification_history: list[Message] = Field(default_factory=list)
     reference_findings: list[ReferenceProduct] | None = None
     product_spec: ProductSpec | None = None
+    compliance_report: ComplianceReport | None = None
 
     bom: BOM | None = None
     cad_artifacts: CADArtifacts | None = None
