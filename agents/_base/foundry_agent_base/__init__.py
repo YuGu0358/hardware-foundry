@@ -7,8 +7,8 @@ from foundry_agent_base.state import (
     AssemblyDoc,
     BOMItem,
     CADArtifacts,
-    Constraints,
     ConnectorSlot,
+    Constraints,
     CostEvent,
     CostLedger,
     CriticReport,
@@ -30,12 +30,12 @@ from foundry_agent_base.state import (
 )
 
 __all__ = [
+    "BOM",
     "AgentContext",
     "AppArtifacts",
     "AssemblyDoc",
-    "BaseAgent",
-    "BOM",
     "BOMItem",
+    "BaseAgent",
     "CADArtifacts",
     "ConnectorSlot",
     "Constraints",
