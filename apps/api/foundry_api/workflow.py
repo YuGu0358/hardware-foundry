@@ -15,11 +15,11 @@ from typing import AsyncIterator
 from uuid import UUID, uuid4
 
 from foundry_agent_base import AgentContext, ProductState
+from foundry_agent_clarifier import ClarifierAgent
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import END, START, StateGraph
 
 from foundry_api.config import langgraph_dsn, settings
-from foundry_api.echo_agent import EchoAgent
 
 
 # ---------------------------------------------------------------------------
@@ -27,8 +27,8 @@ from foundry_api.echo_agent import EchoAgent
 # ---------------------------------------------------------------------------
 
 
-async def _echo_node(state: ProductState) -> dict:
-    agent = EchoAgent()
+async def _clarifier_node(state: ProductState) -> dict:
+    agent = ClarifierAgent()
     ctx = AgentContext(
         run_id=str(state.run_id),
         user_id=str(state.user_id),
@@ -44,9 +44,9 @@ async def _echo_node(state: ProductState) -> dict:
 
 def _build_graph() -> StateGraph:
     graph = StateGraph(ProductState)
-    graph.add_node("echo", _echo_node)
-    graph.add_edge(START, "echo")
-    graph.add_edge("echo", END)
+    graph.add_node("clarifier", _clarifier_node)
+    graph.add_edge(START, "clarifier")
+    graph.add_edge("clarifier", END)
     return graph
 
 

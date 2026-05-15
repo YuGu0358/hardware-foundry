@@ -17,6 +17,7 @@ dependencies = [
     "httpx>=0.27",
     "structlog>=24.4",
     "foundry-agent-base",
+    "foundry-agent-clarifier",
 ]
 
 [build-system]
