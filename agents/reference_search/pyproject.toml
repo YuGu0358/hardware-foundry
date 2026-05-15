@@ -1,0 +1,17 @@
+[project]
+name = "foundry-agent-reference-search"
+version = "0.0.1"
+description = "Reference Search agent — finds 3-5 similar products via Tavily and summarises design takeaways"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.9",
+    "tavily-python>=0.5",
+    "foundry-agent-base",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["foundry_agent_reference_search"]
