@@ -17,6 +17,7 @@ from uuid import UUID
 
 from foundry_agent_base import AgentContext, Message, ProductState
 from foundry_agent_clarifier import ClarifierAgent
+from foundry_agent_reference_search import ReferenceSearchAgent
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import END, START, StateGraph
 
@@ -25,6 +26,17 @@ from foundry_api.config import langgraph_dsn
 # ---------------------------------------------------------------------------
 # Node wrappers — adapt BaseAgent.__call__ to LangGraph's (state) -> partial signature
 # ---------------------------------------------------------------------------
+
+
+async def _reference_search_node(state: ProductState) -> dict:
+    """Runs once at project start; later turns skip this node (see _route_after_start)."""
+    agent = ReferenceSearchAgent()
+    ctx = AgentContext(
+        run_id=str(state.run_id),
+        user_id=str(state.user_id),
+        project_id=str(state.project_id),
+    )
+    return await agent(state, ctx)
 
 
 async def _clarifier_node(state: ProductState) -> dict:
@@ -37,6 +49,13 @@ async def _clarifier_node(state: ProductState) -> dict:
     return await agent(state, ctx)
 
 
+def _route_after_start(state: ProductState) -> str:
+    """Skip reference_search on resumed runs (when findings already present)."""
+    if state.reference_findings is not None:
+        return "clarifier"
+    return "reference_search"
+
+
 # ---------------------------------------------------------------------------
 # Graph factory
 # ---------------------------------------------------------------------------
@@ -44,8 +63,14 @@ async def _clarifier_node(state: ProductState) -> dict:
 
 def _build_graph() -> StateGraph:
     graph = StateGraph(ProductState)
+    graph.add_node("reference_search", _reference_search_node)
     graph.add_node("clarifier", _clarifier_node)
-    graph.add_edge(START, "clarifier")
+    graph.add_conditional_edges(
+        START,
+        _route_after_start,
+        {"reference_search": "reference_search", "clarifier": "clarifier"},
+    )
+    graph.add_edge("reference_search", "clarifier")
     graph.add_edge("clarifier", END)
     return graph
 

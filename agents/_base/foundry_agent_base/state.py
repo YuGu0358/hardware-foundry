@@ -63,6 +63,21 @@ class ProductSpec(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Reference products (PR #4 — Reference Search agent)
+# ---------------------------------------------------------------------------
+
+
+class ReferenceProduct(BaseModel):
+    """One similar product surfaced by Reference Search, with design notes."""
+
+    name: str
+    url: str
+    summary: str
+    design_takeaways: list[str] = Field(default_factory=list)
+    similarity_score: float = Field(ge=0.0, le=1.0, default=0.5)
+
+
+# ---------------------------------------------------------------------------
 # Mechanical ⟷ Electrical contract
 # ---------------------------------------------------------------------------
 
@@ -278,6 +293,7 @@ class ProductState(BaseModel):
 
     raw_input: str
     clarification_history: list[Message] = Field(default_factory=list)
+    reference_findings: list[ReferenceProduct] | None = None
     product_spec: ProductSpec | None = None
 
     bom: BOM | None = None
