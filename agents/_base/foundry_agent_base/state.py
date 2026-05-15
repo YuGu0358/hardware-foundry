@@ -84,6 +84,25 @@ class ComplianceReport(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Feasibility (Phase 2 — Feasibility agent)
+# ---------------------------------------------------------------------------
+
+
+class FeasibilityReport(BaseModel):
+    """Rough estimates produced by the Feasibility agent.
+
+    No costed BOM yet (that's Phase 3 Component Selection) — these are
+    LLM heuristics based on the ProductSpec + reference products only.
+    """
+
+    bom_cost_band_cents: tuple[int, int]      # (low, high) inclusive bound
+    schedule_weeks_band: tuple[int, int]      # (low, high) inclusive bound
+    complexity_score: int = Field(ge=1, le=10)
+    top_risks: list[str] = Field(default_factory=list)  # 3-5 short, concrete risks
+    summary: str
+
+
+# ---------------------------------------------------------------------------
 # Reference products (PR #4 — Reference Search agent)
 # ---------------------------------------------------------------------------
 
@@ -317,6 +336,7 @@ class ProductState(BaseModel):
     reference_findings: list[ReferenceProduct] | None = None
     product_spec: ProductSpec | None = None
     compliance_report: ComplianceReport | None = None
+    feasibility_report: FeasibilityReport | None = None
 
     bom: BOM | None = None
     cad_artifacts: CADArtifacts | None = None

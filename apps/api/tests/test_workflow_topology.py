@@ -14,12 +14,13 @@ def test_build_graph_has_expected_nodes():
     # Arrange / Act
     graph = _build_graph()
 
-    # Assert — Compliance landed in PR #9 so we expect 4 nodes
+    # Assert — Feasibility landed in PR #10 so we expect 5 nodes
     assert set(graph.nodes.keys()) == {
         "reference_search",
         "clarifier",
         "planner",
         "compliance",
+        "feasibility",
     }
 
 

@@ -9,6 +9,7 @@ dependencies = [
     "foundry-agent-base",
     "foundry-agent-clarifier",
     "foundry-agent-compliance",
+    "foundry-agent-feasibility",
     "foundry-agent-planner",
     "foundry-agent-reference-search",
     "foundry-api",
@@ -24,12 +25,13 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["agents/_base", "agents/clarifier", "agents/compliance", "agents/planner", "agents/reference_search", "apps/api"]
+members = ["agents/_base", "agents/clarifier", "agents/compliance", "agents/feasibility", "agents/planner", "agents/reference_search", "apps/api"]
 
 [tool.uv.sources]
 foundry-agent-base = { workspace = true }
 foundry-agent-clarifier = { workspace = true }
 foundry-agent-compliance = { workspace = true }
+foundry-agent-feasibility = { workspace = true }
 foundry-agent-planner = { workspace = true }
 foundry-agent-reference-search = { workspace = true }
 foundry-api = { workspace = true }
