@@ -122,9 +122,52 @@ async def test_reference_search_happy_path_returns_products(monkeypatch, mock_ll
 
     # Assert
     findings = update["reference_findings"]
-    assert 3 <= len(findings) <= 5  # noqa: PLR2004 - agent clamps to 3-5
+    assert len(findings) == 4  # noqa: PLR2004 - fixture feeds exactly 4 products
     assert all(isinstance(p, ReferenceProduct) for p in findings)
     assert findings[0].name == "Reference Lamp 1"
+
+
+@pytest.mark.phase1
+async def test_reference_search_caps_at_five_products(monkeypatch, mock_llm):
+    """The agent must clamp the returned products to the _TARGET_PRODUCTS upper bound."""
+    # Arrange
+    monkeypatch.setenv("TAVILY_API_KEY", "test-key")
+
+    fake_results = {
+        "results": [
+            {
+                "title": f"Product {i}",
+                "url": f"https://example.com/p{i}",
+                "content": f"Description of product {i}.",
+            }
+            for i in range(1, 9)
+        ]
+    }
+
+    def fake_search(self, **kw):
+        return fake_results
+
+    monkeypatch.setattr(tavily.TavilyClient, "search", fake_search)
+
+    products_payload = [
+        {
+            "name": f"Reference Lamp {i}",
+            "url": f"https://example.com/p{i}",
+            "summary": f"Summary of reference lamp {i}.",
+            "design_takeaways": [f"takeaway-{i}-a", f"takeaway-{i}-b"],
+            "similarity_score": 0.5 + 0.05 * i,
+        }
+        for i in range(1, 9)
+    ]
+    mock_llm["payload"] = json.dumps({"products": products_payload})
+
+    # Act
+    update = await ReferenceSearchAgent().run(_make_state(), _make_ctx())
+
+    # Assert
+    findings = update["reference_findings"]
+    assert len(findings) == 5  # noqa: PLR2004 - agent caps at _TARGET_PRODUCTS (5)
+    assert all(isinstance(p, ReferenceProduct) for p in findings)
 
 
 @pytest.mark.phase1
