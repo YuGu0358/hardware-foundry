@@ -6,13 +6,12 @@ to avoid float drift in cost ledger arithmetic.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # ---------------------------------------------------------------------------
 # Conversation & requirements
@@ -28,7 +27,7 @@ class MessageRole(StrEnum):
 class Message(BaseModel):
     role: MessageRole
     content: str
-    at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class Requirement(BaseModel):
@@ -105,7 +104,7 @@ class EnclosurePCBContract(BaseModel):
     component_height_zones: dict[str, float] = Field(default_factory=dict)
     connector_positions: list[ConnectorSlot] = Field(default_factory=list)
     last_modified_by: Literal["cad", "pcb"]
-    last_modified_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_modified_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     revision: int = 0
 
 
@@ -199,7 +198,7 @@ class CriticReport(BaseModel):
     severity: Severity
     issues: list[Issue]
     summary: str
-    at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +248,7 @@ class UserManualDoc(BaseModel):
 
 
 class CostEvent(BaseModel):
-    at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     agent: str
     delta_cents: int
     bucket: Literal["bom", "fab", "nre", "llm"]
@@ -288,7 +287,7 @@ class ProductState(BaseModel):
     run_id: UUID = Field(default_factory=uuid4)
     user_id: UUID
     project_id: UUID
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     current_phase: PhaseLabel = "clarify"
 
     raw_input: str

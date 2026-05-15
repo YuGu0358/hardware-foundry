@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 from typing import ClassVar
 
-from pydantic import BaseModel, Field, ValidationError
-
 from foundry_agent_base import (
     AgentContext,
     BaseAgent,
@@ -15,6 +13,7 @@ from foundry_agent_base import (
     ProductState,
     StateUpdate,
 )
+from pydantic import BaseModel, Field, ValidationError
 
 from foundry_agent_clarifier.prompts import SYSTEM_PROMPT_V1, user_prompt_v1
 
