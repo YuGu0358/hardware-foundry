@@ -1,26 +1,26 @@
-"""LangGraph workflow assembly.
+"""LangGraph workflow assembly + multi-turn helpers.
 
-Phase 0 graph is a single-node graph (EchoAgent). Subsequent phases will
-extend this graph with Clarifier -> Planner -> Compliance -> ... as each
-agent comes online.
+Phase 1 graph is a single Clarifier node with interrupt_after, so the graph
+pauses for user input after each clarifier turn. The user resumes by POSTing
+a message; the graph then runs another clarifier turn (or, once user_intent_to_plan
+becomes True in a later PR, routes to Planner).
 
-AsyncPostgresSaver is the checkpointer so run state survives process
-restarts and is inspectable in the LangGraph checkpoint tables.
+thread_id == project_id, so all turns of one project share state in the
+LangGraph checkpointer.
 """
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from foundry_agent_base import AgentContext, ProductState
+from foundry_agent_base import AgentContext, Message, ProductState
 from foundry_agent_clarifier import ClarifierAgent
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import END, START, StateGraph
 
-from foundry_api.config import langgraph_dsn, settings
-
+from foundry_api.config import langgraph_dsn
 
 # ---------------------------------------------------------------------------
 # Node wrappers — adapt BaseAgent.__call__ to LangGraph's (state) -> partial signature
@@ -54,32 +54,76 @@ def _build_graph() -> StateGraph:
 async def lifespan_graph() -> AsyncIterator[object]:
     """Yield a compiled LangGraph app with a live Postgres checkpointer.
 
-    Use as FastAPI lifespan: `async with lifespan_graph() as app: ...`
+    `interrupt_after=["clarifier"]` makes the graph pause AFTER each clarifier
+    turn. The router resumes the graph by calling `resume_with_message()`.
     """
     async with AsyncPostgresSaver.from_conn_string(langgraph_dsn()) as checkpointer:
-        await checkpointer.setup()  # idempotent: creates checkpoint tables on first call
-        compiled = _build_graph().compile(checkpointer=checkpointer)
+        await checkpointer.setup()
+        compiled = _build_graph().compile(
+            checkpointer=checkpointer,
+            interrupt_after=["clarifier"],
+        )
         yield compiled
 
 
 # ---------------------------------------------------------------------------
-# Invocation helper
+# Multi-turn helpers
 # ---------------------------------------------------------------------------
 
 
-async def invoke_initial_run(
+def _config_for(project_id: UUID) -> dict:
+    return {"configurable": {"thread_id": str(project_id)}}
+
+
+async def start_project_run(
     compiled_app: object,
-    raw_input: str,
     *,
-    project_id: UUID | None = None,
+    project_id: UUID,
+    user_id: UUID,
+    raw_input: str,
 ) -> ProductState:
-    """Kick off a brand-new run through the graph and return the final state."""
+    """Kick off the graph for a fresh project. Returns state after first clarifier turn."""
     initial = ProductState(
-        user_id=settings.default_user_id,
-        project_id=project_id or uuid4(),
+        user_id=user_id,
+        project_id=project_id,
         raw_input=raw_input,
     )
-    thread_id = str(initial.run_id)
-    config = {"configurable": {"thread_id": thread_id}}
-    result_dict = await compiled_app.ainvoke(initial, config=config)  # type: ignore[attr-defined]
-    return ProductState.model_validate(result_dict)
+    config = _config_for(project_id)
+    # ainvoke returns the state AFTER the interrupt fires (so: post-clarifier state)
+    await compiled_app.ainvoke(initial, config=config)  # type: ignore[attr-defined]
+    return await _load_state(compiled_app, project_id)
+
+
+async def resume_with_message(
+    compiled_app: object,
+    *,
+    project_id: UUID,
+    user_message: Message,
+) -> ProductState:
+    """Append `user_message` to clarification_history and resume the graph for one turn."""
+    config = _config_for(project_id)
+    current = await _load_state(compiled_app, project_id)
+    if current is None:
+        raise ValueError(f"no checkpoint found for project {project_id}")
+
+    new_history = [*current.clarification_history, user_message]
+    # update_state merges the partial dict using LangGraph's per-field reducers
+    await compiled_app.aupdate_state(  # type: ignore[attr-defined]
+        config,
+        values={"clarification_history": new_history},
+    )
+    # Resume from interrupt — passing None means "continue from where we paused"
+    await compiled_app.ainvoke(None, config=config)  # type: ignore[attr-defined]
+    return await _load_state(compiled_app, project_id)
+
+
+async def read_state(compiled_app: object, project_id: UUID) -> ProductState | None:
+    """Read the latest checkpointed state for a project (no graph execution)."""
+    return await _load_state(compiled_app, project_id)
+
+
+async def _load_state(compiled_app: object, project_id: UUID) -> ProductState | None:
+    snapshot = await compiled_app.aget_state(_config_for(project_id))  # type: ignore[attr-defined]
+    if not snapshot or not snapshot.values:
+        return None
+    return ProductState.model_validate(snapshot.values)
