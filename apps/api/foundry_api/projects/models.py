@@ -6,7 +6,8 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import Index, String, Text
-from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
