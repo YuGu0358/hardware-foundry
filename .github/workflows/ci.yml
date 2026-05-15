@@ -49,7 +49,15 @@ jobs:
         run: uv run alembic -c migrations/alembic.ini upgrade head --sql > /dev/null
 
       - name: Pytest collect-only
-        run: uv run pytest --collect-only
+        # pytest exit 5 == "no tests collected", which is fine while we have 0 tests.
+        # Treat anything other than 0 or 5 as a real import failure.
+        run: |
+          set +e
+          uv run pytest --collect-only
+          status=$?
+          if [ $status -ne 0 ] && [ $status -ne 5 ]; then
+            exit $status
+          fi
 
   frontend:
     name: frontend
