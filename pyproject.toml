@@ -4,6 +4,11 @@ version = "0.0.1"
 description = "Idea-to-physical hardware automation platform — LLM multi-agent system"
 requires-python = ">=3.12"
 readme = "README.md"
+# Pull workspace members as runtime deps so plain `uv sync` installs the full stack
+dependencies = [
+    "foundry-agent-base",
+    "foundry-api",
+]
 
 [dependency-groups]
 dev = [
