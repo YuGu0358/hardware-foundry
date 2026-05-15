@@ -7,6 +7,7 @@ readme = "README.md"
 # Pull workspace members as runtime deps so plain `uv sync` installs the full stack
 dependencies = [
     "foundry-agent-base",
+    "foundry-agent-clarifier",
     "foundry-api",
 ]
 
@@ -20,10 +21,11 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["agents/_base", "apps/api"]
+members = ["agents/_base", "agents/clarifier", "apps/api"]
 
 [tool.uv.sources]
 foundry-agent-base = { workspace = true }
+foundry-agent-clarifier = { workspace = true }
 foundry-api = { workspace = true }
 
 [tool.ruff]

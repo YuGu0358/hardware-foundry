@@ -9,6 +9,7 @@ resolution-markers = [
 [manifest]
 members = [
     "foundry-agent-base",
+    "foundry-agent-clarifier",
     "foundry-api",
     "hardware-foundry",
 ]
@@ -543,6 +544,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "foundry-agent-clarifier"
+version = "0.0.1"
+source = { editable = "agents/clarifier" }
+dependencies = [
+    { name = "foundry-agent-base" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "foundry-agent-base", editable = "agents/_base" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
 name = "foundry-api"
 version = "0.0.1"
 source = { editable = "apps/api" }
@@ -551,6 +567,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "foundry-agent-base" },
+    { name = "foundry-agent-clarifier" },
     { name = "httpx" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
@@ -568,6 +585,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.30" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "foundry-agent-base", editable = "agents/_base" },
+    { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "langgraph", specifier = ">=0.2.50" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=2.0" },
@@ -751,6 +769,7 @@ version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
     { name = "foundry-agent-base" },
+    { name = "foundry-agent-clarifier" },
     { name = "foundry-api" },
 ]
 
@@ -766,6 +785,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "foundry-agent-base", editable = "agents/_base" },
+    { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
     { name = "foundry-api", editable = "apps/api" },
 ]
 
