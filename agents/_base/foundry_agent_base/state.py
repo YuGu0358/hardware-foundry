@@ -161,7 +161,7 @@ class BOMItem(BaseModel):
     description: str
     quantity: int = 1
     unit_price_cents: int
-    supplier: Literal["digikey", "lcsc", "octopart", "jlcpcb", "other"] = "digikey"
+    supplier: Literal["digikey", "lcsc", "octopart", "jlcpcb", "stub", "other"] = "digikey"
     supplier_part_number: str | None = None
     in_stock: bool = True
     alternatives: list[str] = Field(default_factory=list)
@@ -172,6 +172,31 @@ class BOM(BaseModel):
     items: list[BOMItem]
     total_cost_cents: int
     currency: Literal["CNY", "USD", "EUR"] = "CNY"
+
+
+class ComponentQuery(BaseModel):
+    """A request for one component, emitted by the planner / component-selection agent."""
+
+    role: str                          # e.g. "main MCU", "LED driver IC", "USB-C connector"
+    parameters: dict[str, str | float | int | bool] = Field(default_factory=dict)
+    quantity: int = 1
+    preferred_supplier: Literal["digikey", "lcsc", "octopart", "any"] = "any"
+
+
+class ComponentMatch(BaseModel):
+    """A candidate component returned by a SupplierAdapter."""
+
+    mpn: str
+    manufacturer: str
+    description: str
+    supplier: Literal["digikey", "lcsc", "octopart", "stub", "other"]
+    supplier_part_number: str | None = None
+    unit_price_cents: int
+    in_stock: bool = True
+    moq: int = 1
+    datasheet_url: str | None = None
+    parametric: dict[str, str | float | int | bool] = Field(default_factory=dict)
+    score: float = Field(ge=0.0, le=1.0, default=0.5)
 
 
 # ---------------------------------------------------------------------------

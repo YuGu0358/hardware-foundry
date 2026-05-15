@@ -9,6 +9,7 @@ dependencies = [
     "foundry-agent-base",
     "foundry-agent-clarifier",
     "foundry-agent-compliance",
+    "foundry-agent-component-selection",
     "foundry-agent-feasibility",
     "foundry-agent-planner",
     "foundry-agent-reference-search",
@@ -25,12 +26,13 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["agents/_base", "agents/clarifier", "agents/compliance", "agents/feasibility", "agents/planner", "agents/reference_search", "apps/api"]
+members = ["agents/_base", "agents/clarifier", "agents/compliance", "agents/component_selection", "agents/feasibility", "agents/planner", "agents/reference_search", "apps/api"]
 
 [tool.uv.sources]
 foundry-agent-base = { workspace = true }
 foundry-agent-clarifier = { workspace = true }
 foundry-agent-compliance = { workspace = true }
+foundry-agent-component-selection = { workspace = true }
 foundry-agent-feasibility = { workspace = true }
 foundry-agent-planner = { workspace = true }
 foundry-agent-reference-search = { workspace = true }
@@ -56,7 +58,7 @@ markers = [
     "phase0: Phase 0 baseline tests",
     "phase1: Clarifier + Planner",
     "phase2: Compliance + Feasibility",
-    "phase3: Component selection",
+    "phase3: Component selection foundation tests",
     "phase4: CAD + DfAM",
     "phase5: PCB",
     "phase6: Simulation",
