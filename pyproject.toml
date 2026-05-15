@@ -4,6 +4,11 @@ version = "0.0.1"
 description = "Idea-to-physical hardware automation platform — LLM multi-agent system"
 requires-python = ">=3.12"
 readme = "README.md"
+# Pull workspace members as runtime deps so plain `uv sync` installs the full stack
+dependencies = [
+    "foundry-agent-base",
+    "foundry-api",
+]
 
 [dependency-groups]
 dev = [
@@ -15,10 +20,11 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["agents/_base"]
+members = ["agents/_base", "apps/api"]
 
 [tool.uv.sources]
 foundry-agent-base = { workspace = true }
+foundry-api = { workspace = true }
 
 [tool.ruff]
 line-length = 100

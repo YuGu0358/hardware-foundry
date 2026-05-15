@@ -3,6 +3,7 @@
 from foundry_agent_base.agent import AgentContext, BaseAgent, StateUpdate
 from foundry_agent_base.state import (
     BOM,
+    AppArtifacts,
     AssemblyDoc,
     BOMItem,
     CADArtifacts,
@@ -17,6 +18,7 @@ from foundry_agent_base.state import (
     Hole,
     Issue,
     Message,
+    MessageRole,
     PCBArtifacts,
     ProductSpec,
     ProductState,
@@ -28,6 +30,7 @@ from foundry_agent_base.state import (
 
 __all__ = [
     "AgentContext",
+    "AppArtifacts",
     "AssemblyDoc",
     "BaseAgent",
     "BOM",
@@ -44,6 +47,7 @@ __all__ = [
     "Hole",
     "Issue",
     "Message",
+    "MessageRole",
     "PCBArtifacts",
     "ProductSpec",
     "ProductState",
