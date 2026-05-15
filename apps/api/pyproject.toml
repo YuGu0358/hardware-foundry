@@ -18,6 +18,7 @@ dependencies = [
     "structlog>=24.4",
     "foundry-agent-base",
     "foundry-agent-clarifier",
+    "foundry-agent-planner",
     "foundry-agent-reference-search",
 ]
 

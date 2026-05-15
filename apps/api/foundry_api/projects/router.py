@@ -22,7 +22,13 @@ from foundry_api.config import settings
 from foundry_api.db import get_session
 from foundry_api.projects.models import Project
 from foundry_api.projects.repository import ProjectRepository
-from foundry_api.workflow import read_state, resume_with_message, start_project_run
+from foundry_api.workflow import (
+    apply_command_approve_plan,
+    apply_command_start_planning,
+    read_state,
+    resume_with_message,
+    start_project_run,
+)
 
 logger = structlog.get_logger()
 
@@ -162,6 +168,52 @@ async def post_message(
         project_id=project_id,
         user_message=user_msg,
     )
+
+    return ProjectDetail(
+        project=ProjectSummary.from_orm(project),
+        state=final_state.model_dump(mode="json"),
+    )
+
+
+@router.post("/{project_id}/commands/start-planning", response_model=ProjectDetail)
+async def cmd_start_planning(
+    project_id: UUID,
+    repo: Annotated[ProjectRepository, Depends(get_repo)],
+    request: Request,
+) -> ProjectDetail:
+    """User signals 'OK, start planning'. Triggers Planner; graph stops at planner interrupt."""
+    project = await repo.get_for_user(project_id, settings.default_user_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="project not found")
+
+    final_state = await apply_command_start_planning(
+        compiled_app=get_graph(request),
+        project_id=project_id,
+    )
+    await repo.update_phase(project_id, "plan")
+
+    return ProjectDetail(
+        project=ProjectSummary.from_orm(project),
+        state=final_state.model_dump(mode="json"),
+    )
+
+
+@router.post("/{project_id}/commands/approve-plan", response_model=ProjectDetail)
+async def cmd_approve_plan(
+    project_id: UUID,
+    repo: Annotated[ProjectRepository, Depends(get_repo)],
+    request: Request,
+) -> ProjectDetail:
+    """HITL Gate #1: approve the ProductSpec and exit Phase 1."""
+    project = await repo.get_for_user(project_id, settings.default_user_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="project not found")
+
+    final_state = await apply_command_approve_plan(
+        compiled_app=get_graph(request),
+        project_id=project_id,
+    )
+    await repo.update_phase(project_id, "design")
 
     return ProjectDetail(
         project=ProjectSummary.from_orm(project),
