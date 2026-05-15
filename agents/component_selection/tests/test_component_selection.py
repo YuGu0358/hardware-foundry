@@ -113,7 +113,10 @@ async def test_component_selection_agent_with_spec_emits_bom():
     assert isinstance(bom, BOM)
     assert len(bom.items) == functional_count  # one per functional requirement
     for item in bom.items:
-        assert item.supplier == "stub"
+        # Stub-sourced rows are coerced to "other" in the BOM but remain
+        # identifiable via the "STUB-" mpn prefix from StubSupplierAdapter.
+        assert item.supplier == "other"
+        assert item.mpn.startswith("STUB-")
         # Stub returns 3 candidates; the chosen mpn is excluded from alternatives,
         # leaving 2 alternates per item.
         assert len(item.alternatives) == _EXPECTED_MATCH_COUNT - 1

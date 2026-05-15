@@ -161,7 +161,7 @@ class BOMItem(BaseModel):
     description: str
     quantity: int = 1
     unit_price_cents: int
-    supplier: Literal["digikey", "lcsc", "octopart", "jlcpcb", "stub", "other"] = "digikey"
+    supplier: Literal["digikey", "lcsc", "octopart", "jlcpcb", "other"] = "digikey"
     supplier_part_number: str | None = None
     in_stock: bool = True
     alternatives: list[str] = Field(default_factory=list)

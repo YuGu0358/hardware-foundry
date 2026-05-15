@@ -62,6 +62,14 @@ class ComponentSelectionAgent(BaseAgent):
             if not matches:
                 continue
             best = max(matches, key=lambda m: m.score)
+            # Map non-production sentinels (e.g. "stub") to "other" so BOMItem stays
+            # on its production Literal. Stub-sourced rows remain identifiable via
+            # mpn starting with "STUB-".
+            _supplier = (
+                best.supplier
+                if best.supplier in {"digikey", "lcsc", "octopart", "jlcpcb"}
+                else "other"
+            )
             items.append(
                 BOMItem(
                     mpn=best.mpn,
@@ -69,7 +77,7 @@ class ComponentSelectionAgent(BaseAgent):
                     description=best.description,
                     quantity=q.quantity,
                     unit_price_cents=best.unit_price_cents,
-                    supplier=best.supplier,
+                    supplier=_supplier,
                     supplier_part_number=best.supplier_part_number,
                     in_stock=best.in_stock,
                     datasheet_url=best.datasheet_url,
