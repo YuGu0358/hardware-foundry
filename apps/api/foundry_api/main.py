@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from foundry_api import __version__
 from foundry_api.config import settings
@@ -39,6 +40,16 @@ app = FastAPI(
     version=__version__,
     description="Phase 1 — multi-turn Clarifier with LangGraph interrupt + Project entity.",
     lifespan=lifespan,
+)
+
+# CORS — Next.js dev server on localhost:3000. Tighten the allow list before
+# any public deployment (Phase 12).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
