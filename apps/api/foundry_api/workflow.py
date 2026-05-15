@@ -1,6 +1,6 @@
 """LangGraph workflow assembly + multi-turn / command helpers.
 
-Phase 1 + Phase 2 topology:
+Phase 1 + Phase 2 + Phase 3 (foundation) topology:
 
     START
       ├─(conditional, _route_after_start)─►
@@ -23,11 +23,15 @@ Phase 1 + Phase 2 topology:
       │
       └─► feasibility (interrupt_after)
               │
-              └─► END
+              └─► component_selection (interrupt_after)
+                      │
+                      └─► END
 
 Phase 2 MVP chains Compliance → Feasibility automatically once the plan is
-approved. No `gate_compliance_approved` flag yet — the human review gate
-between the two lands in Phase 3.
+approved. Phase 3 slice 1 extends the chain with Component Selection (BOM
+assembly via the stub SupplierAdapter); real Digi-Key / LCSC / Octopart
+adapters and the human review gate between Feasibility and Component
+Selection land in subsequent Phase 3 slices.
 
 thread_id == project_id, so all turns of one project share state in the
 LangGraph checkpointer.
@@ -43,6 +47,7 @@ from uuid import UUID
 from foundry_agent_base import AgentContext, Message, ProductState
 from foundry_agent_clarifier import ClarifierAgent
 from foundry_agent_compliance import ComplianceAgent
+from foundry_agent_component_selection import ComponentSelectionAgent
 from foundry_agent_feasibility import FeasibilityAgent
 from foundry_agent_planner import PlannerAgent
 from foundry_agent_reference_search import ReferenceSearchAgent
@@ -85,6 +90,10 @@ async def _feasibility_node(state: ProductState) -> dict:
     return await FeasibilityAgent()(state, _make_ctx(state))
 
 
+async def _component_selection_node(state: ProductState) -> dict:
+    return await ComponentSelectionAgent()(state, _make_ctx(state))
+
+
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
@@ -115,6 +124,7 @@ def _build_graph() -> StateGraph:
     graph.add_node("planner", _planner_node)
     graph.add_node("compliance", _compliance_node)
     graph.add_node("feasibility", _feasibility_node)
+    graph.add_node("component_selection", _component_selection_node)
 
     graph.add_conditional_edges(
         START,
@@ -133,7 +143,8 @@ def _build_graph() -> StateGraph:
         {"compliance": "compliance", "clarifier": "clarifier"},
     )
     graph.add_edge("compliance", "feasibility")
-    graph.add_edge("feasibility", END)
+    graph.add_edge("feasibility", "component_selection")
+    graph.add_edge("component_selection", END)
     return graph
 
 
@@ -141,18 +152,25 @@ def _build_graph() -> StateGraph:
 async def lifespan_graph() -> AsyncIterator[object]:
     """Yield a compiled LangGraph app with a live Postgres checkpointer.
 
-    `interrupt_after=["clarifier", "planner", "compliance", "feasibility"]`
-    pauses the graph after each of these nodes; the router resumes via
-    /messages or /commands/* endpoints. Phase 2 MVP has no `compliance`
-    or `feasibility` gate flags — the graph chains compliance → feasibility
-    → END once the plan-approval gate has been satisfied. Human review of
-    the feasibility report itself lands in Phase 3.
+    `interrupt_after=["clarifier", "planner", "compliance", "feasibility",
+    "component_selection"]` pauses the graph after each of these nodes; the
+    router resumes via /messages or /commands/* endpoints. Phase 3 slice 1
+    auto-chains compliance → feasibility → component_selection → END once
+    the plan-approval gate has been satisfied. The human review gate
+    between feasibility and component_selection lands in a later Phase 3
+    slice along with real supplier adapters.
     """
     async with AsyncPostgresSaver.from_conn_string(langgraph_dsn()) as checkpointer:
         await checkpointer.setup()
         compiled = _build_graph().compile(
             checkpointer=checkpointer,
-            interrupt_after=["clarifier", "planner", "compliance", "feasibility"],
+            interrupt_after=[
+                "clarifier",
+                "planner",
+                "compliance",
+                "feasibility",
+                "component_selection",
+            ],
         )
         yield compiled
 

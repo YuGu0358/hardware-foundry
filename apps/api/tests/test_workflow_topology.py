@@ -14,13 +14,14 @@ def test_build_graph_has_expected_nodes():
     # Arrange / Act
     graph = _build_graph()
 
-    # Assert — Feasibility landed in PR #10 so we expect 5 nodes
+    # Assert — Phase 3 slice 1 adds component_selection, so we expect 6 nodes
     assert set(graph.nodes.keys()) == {
         "reference_search",
         "clarifier",
         "planner",
         "compliance",
         "feasibility",
+        "component_selection",
     }
 
 

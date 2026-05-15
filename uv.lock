@@ -11,6 +11,7 @@ members = [
     "foundry-agent-base",
     "foundry-agent-clarifier",
     "foundry-agent-compliance",
+    "foundry-agent-component-selection",
     "foundry-agent-feasibility",
     "foundry-agent-planner",
     "foundry-agent-reference-search",
@@ -578,6 +579,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "foundry-agent-component-selection"
+version = "0.0.1"
+source = { editable = "agents/component_selection" }
+dependencies = [
+    { name = "foundry-agent-base" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "foundry-agent-base", editable = "agents/_base" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
 name = "foundry-agent-feasibility"
 version = "0.0.1"
 source = { editable = "agents/feasibility" }
@@ -635,6 +651,7 @@ dependencies = [
     { name = "foundry-agent-base" },
     { name = "foundry-agent-clarifier" },
     { name = "foundry-agent-compliance" },
+    { name = "foundry-agent-component-selection" },
     { name = "foundry-agent-feasibility" },
     { name = "foundry-agent-planner" },
     { name = "foundry-agent-reference-search" },
@@ -657,6 +674,7 @@ requires-dist = [
     { name = "foundry-agent-base", editable = "agents/_base" },
     { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
     { name = "foundry-agent-compliance", editable = "agents/compliance" },
+    { name = "foundry-agent-component-selection", editable = "agents/component_selection" },
     { name = "foundry-agent-feasibility", editable = "agents/feasibility" },
     { name = "foundry-agent-planner", editable = "agents/planner" },
     { name = "foundry-agent-reference-search", editable = "agents/reference_search" },
@@ -845,6 +863,7 @@ dependencies = [
     { name = "foundry-agent-base" },
     { name = "foundry-agent-clarifier" },
     { name = "foundry-agent-compliance" },
+    { name = "foundry-agent-component-selection" },
     { name = "foundry-agent-feasibility" },
     { name = "foundry-agent-planner" },
     { name = "foundry-agent-reference-search" },
@@ -865,6 +884,7 @@ requires-dist = [
     { name = "foundry-agent-base", editable = "agents/_base" },
     { name = "foundry-agent-clarifier", editable = "agents/clarifier" },
     { name = "foundry-agent-compliance", editable = "agents/compliance" },
+    { name = "foundry-agent-component-selection", editable = "agents/component_selection" },
     { name = "foundry-agent-feasibility", editable = "agents/feasibility" },
     { name = "foundry-agent-planner", editable = "agents/planner" },
     { name = "foundry-agent-reference-search", editable = "agents/reference_search" },

@@ -19,6 +19,7 @@ dependencies = [
     "foundry-agent-base",
     "foundry-agent-clarifier",
     "foundry-agent-compliance",
+    "foundry-agent-component-selection",
     "foundry-agent-feasibility",
     "foundry-agent-planner",
     "foundry-agent-reference-search",
