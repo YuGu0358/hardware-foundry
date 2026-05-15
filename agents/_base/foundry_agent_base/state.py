@@ -302,6 +302,10 @@ class ProductState(BaseModel):
     impact_set: set[str] = Field(default_factory=set)
     artifact_versions: dict[str, str] = Field(default_factory=dict)
 
+    # User-driven signal: set True after user says "OK, start planning" via the
+    # /commands/start-planning endpoint. Controls the conditional edge into Planner.
+    user_intent_to_plan: bool = False
+
     # HITL gates — flipped by frontend after human approval
     gate_plan_approved: bool = False
     gate_review_approved: bool = False
