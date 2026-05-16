@@ -23,6 +23,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
+    "pytest-httpx>=0.30",
 ]
 
 [tool.uv.workspace]
@@ -67,4 +68,5 @@ markers = [
     "phase9: Fabrication",
     "phase10: Docs",
     "phase11: E2E",
+    "cloud: tests that hit the live Supabase cloud DB (require RUN_CLOUD_TESTS=1)",
 ]
