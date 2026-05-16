@@ -26,6 +26,7 @@ from foundry_api.db import SessionLocal
 from foundry_api.projects.models import Project
 from foundry_api.projects.repository import ProjectRepository
 
+# Sentinel UUID for tests only; not a real auth.users row (matters if RLS is added later).
 _TEST_USER_ID = UUID("00000000-0000-0000-0000-000000000999")
 
 
@@ -61,9 +62,12 @@ async def test_projects_repository_round_trip_against_cloud() -> None:
             wrong_user = UUID("00000000-0000-0000-0000-000000000001")
             assert await repo.get_for_user(created_id, wrong_user) is None
 
-            # Assert — list_for_user includes the new row
+            # Assert — list_for_user returns the new row at the top (ordered by
+            # created_at DESC, and we just inserted it). Avoid scanning the full
+            # limit=50 window so a row-accumulation regression fails loudly here.
             listed = await repo.list_for_user(_TEST_USER_ID)
-            assert any(p.id == created_id for p in listed)
+            assert len(listed) >= 1
+            assert listed[0].id == created_id
 
             # Act — update_phase, re-fetch, assert
             await repo.update_phase(created_id, "plan")
@@ -77,10 +81,16 @@ async def test_projects_repository_round_trip_against_cloud() -> None:
         # Cleanup — never leave test rows in the cloud DB, even on failure.
         if created_id is not None:
             async with SessionLocal() as cleanup_session:
-                await cleanup_session.execute(
+                delete_result = await cleanup_session.execute(
                     sa.delete(Project).where(Project.id == created_id)
                 )
                 await cleanup_session.commit()
+                # Assert the DELETE actually removed our row, not "happened to find
+                # nothing because a previous run already cleaned up". Catches silent
+                # cleanup drift that the count==0 check below would otherwise mask.
+                assert delete_result.rowcount == 1, (
+                    f"cleanup: expected to delete 1 row, deleted {delete_result.rowcount}"
+                )
 
                 remaining = await cleanup_session.execute(
                     sa.select(sa.func.count()).select_from(Project).where(Project.id == created_id)

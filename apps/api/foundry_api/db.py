@@ -25,10 +25,13 @@ class Base(DeclarativeBase):
     """Shared declarative base for all ORM models."""
 
 
-# Supabase's transaction pooler (pgbouncer) does not support prepared statements;
-# disable asyncpg's prepared-statement caches so the same engine works against
-# both local Postgres and the pooled cloud DSN.
-_ASYNCPG_CONNECT_ARGS: dict[str, Any] = {
+# Supabase's TRANSACTION pooler (port 6543, pgbouncer transaction mode) does not
+# support prepared statements. Disabling both caches keeps asyncpg from issuing
+# PREPARE under the hood. Session pooler (5432) and direct connections support
+# prepared statements normally; this constant is applied unconditionally when
+# +asyncpg is in the DSN, which means session-pooler users currently pay a small
+# cache-disabling cost. Acceptable tradeoff for now.
+_ASYNCPG_CONNECT_ARGS: dict[str, int] = {
     "statement_cache_size": 0,
     "prepared_statement_cache_size": 0,
 }
