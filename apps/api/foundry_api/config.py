@@ -42,8 +42,16 @@ class Settings(BaseSettings):
         description="Hardcoded user_id until Auth.js comes online (Phase 12).",
     )
 
+    # ---- Supabase (cloud Postgres + Storage) ----
+    # All optional so local-only setups (docker compose) continue to boot
+    # without a Supabase project; only runtime cloud calls require them.
+    supabase_url: str | None = None
+    supabase_anon_key: str | None = None
+    supabase_service_role_key: str | None = None
+    supabase_storage_bucket: str = "components"
 
-settings = Settings()  # type: ignore[call-arg]
+
+settings = Settings()
 
 
 def langgraph_dsn() -> str:
