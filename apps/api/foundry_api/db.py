@@ -25,12 +25,21 @@ class Base(DeclarativeBase):
     """Shared declarative base for all ORM models."""
 
 
+# Supabase's transaction pooler (pgbouncer) does not support prepared statements;
+# disable asyncpg's prepared-statement caches so the same engine works against
+# both local Postgres and the pooled cloud DSN.
+_ASYNCPG_CONNECT_ARGS: dict[str, Any] = {
+    "statement_cache_size": 0,
+    "prepared_statement_cache_size": 0,
+}
+
 engine: AsyncEngine = create_async_engine(
     settings.database_url,
     echo=False,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    connect_args=_ASYNCPG_CONNECT_ARGS if "+asyncpg" in settings.database_url else {},
 )
 
 SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
